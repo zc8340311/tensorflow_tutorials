@@ -3,7 +3,6 @@ Parag K. Mital, Jan 2016.
 """
 
 import tensorflow as tf
-from tensorflow.python import control_flow_ops
 
 
 def batch_norm(x, phase_train, scope='bn', affine=True):
@@ -41,7 +40,6 @@ def batch_norm(x, phase_train, scope='bn', affine=True):
 
         batch_mean, batch_var = tf.nn.moments(x, [0, 1, 2], name='moments')
         ema = tf.train.ExponentialMovingAverage(decay=0.9)
-        ema_apply_op = ema.apply([batch_mean, batch_var])
         ema_mean, ema_var = ema.average(batch_mean), ema.average(batch_var)
 
         def mean_var_with_update():
@@ -52,9 +50,10 @@ def batch_norm(x, phase_train, scope='bn', affine=True):
             name : TYPE
                 Description
             """
+            ema_apply_op = ema.apply([batch_mean, batch_var])
             with tf.control_dependencies([ema_apply_op]):
                 return tf.identity(batch_mean), tf.identity(batch_var)
-        mean, var = control_flow_ops.cond(phase_train,
+        mean, var = tf.cond(phase_train,
                                           mean_var_with_update,
                                           lambda: (ema_mean, ema_var))
 
